@@ -1,0 +1,61 @@
+{
+  "common": {
+    "name": "bluetooth-rpi5",
+    "version": "0.0.1",
+    "news": {
+      "0.0.1": {
+        "en": "Initial development version.",
+        "de": "Initiale Entwicklungsversion."
+      }
+    },
+    "title": "Bluetooth (BLE) - Raspberry Pi 5",
+    "titleLang": {
+      "en": "Bluetooth (BLE) - Raspberry Pi 5",
+      "de": "Bluetooth (BLE) - Raspberry Pi 5"
+    },
+    "desc": {
+      "en": "Generic BLE adapter for Raspberry Pi 5 using the built-in Bluetooth controller (BlueZ D-Bus).",
+      "de": "Generischer BLE-Adapter für Raspberry Pi 5 über den eingebauten Bluetooth-Controller (BlueZ D-Bus)."
+    },
+    "authors": [
+      "YOUR_NAME <you@example.com>"
+    ],
+    "keywords": [
+      "bluetooth",
+      "ble",
+      "bluez",
+      "raspberry",
+      "rpi5",
+      "dbus"
+    ],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "icon": "bluetooth-rpi5.png",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/USER/REPO/main/admin/bluetooth-rpi5.png",
+    "readme": "README.md",
+    "loglevel": "info",
+    "type": "communication",
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=5.0.0"
+      }
+    ],
+    "main": "main.js"
+  },
+  "native": {
+    "adapter": "hci0",
+    "scanOnStart": true,
+    "scanDurationSec": 15,
+    "reconnectIntervalSec": 30,
+    "devicesJson": "[\n  {\n    \\\"id\\\": \\\"demo\\\",\n    \\\"name\\\": \\\"Demo Device\\\",\n    \\\"address\\\": \\\"AA:BB:CC:DD:EE:FF\\\",\n    \\\"connect\\\": false,\n    \\\"gatt\\\": []\n  }\n]\n"
+  },
+  "objects": [],
+  "instanceObjects": []
+}

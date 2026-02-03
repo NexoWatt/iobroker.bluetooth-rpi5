@@ -1,0 +1,15 @@
+node_modules/
+*.log
+.DS_Store
+.idea/
+.vscode/
+# ioBroker runtime files
+/iobroker-data/
+/iobroker-data-files/
+# build artifacts
+/dist/
+
+# lockfiles (optional)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

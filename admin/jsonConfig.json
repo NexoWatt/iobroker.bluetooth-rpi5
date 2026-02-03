@@ -1,0 +1,80 @@
+{
+  "i18n": true,
+  "type": "tabs",
+  "items": {
+    "general": {
+      "type": "panel",
+      "label": {
+        "en": "General",
+        "de": "Allgemein"
+      },
+      "items": {
+        "adapter": {
+          "type": "text",
+          "label": {
+            "en": "Bluetooth adapter (e.g. hci0)",
+            "de": "Bluetooth-Adapter (z.B. hci0)"
+          },
+          "default": "hci0"
+        },
+        "scanOnStart": {
+          "type": "checkbox",
+          "label": {
+            "en": "Scan on start",
+            "de": "Beim Start scannen"
+          },
+          "default": true
+        },
+        "scanDurationSec": {
+          "type": "number",
+          "label": {
+            "en": "Scan duration (seconds)",
+            "de": "Scan-Dauer (Sekunden)"
+          },
+          "min": 1,
+          "max": 300,
+          "default": 15
+        },
+        "reconnectIntervalSec": {
+          "type": "number",
+          "label": {
+            "en": "Reconnect interval (seconds)",
+            "de": "Reconnect-Intervall (Sekunden)"
+          },
+          "min": 5,
+          "max": 3600,
+          "default": 30
+        }
+      }
+    },
+    "devices": {
+      "type": "panel",
+      "label": {
+        "en": "Devices",
+        "de": "Geräte"
+      },
+      "items": {
+        "_help": {
+          "type": "staticText",
+          "text": {
+            "en": "Enter a JSON array describing your devices and the GATT characteristics you want to read/write. See README for examples.",
+            "de": "Trage hier ein JSON-Array ein, das deine Geräte und die GATT-Characteristics beschreibt, die du lesen/schreiben möchtest. Beispiele siehe README."
+          }
+        },
+        "devicesJson": {
+          "type": "text",
+          "multiline": true,
+          "maxLength": 100000,
+          "label": {
+            "en": "Devices JSON",
+            "de": "Geräte-JSON"
+          },
+          "help": {
+            "en": "Example: [{\"id\":\"lamp1\",\"name\":\"Lamp\",\"address\":\"AA:BB:CC:DD:EE:FF\",\"connect\":true,\"gatt\":[...]}]",
+            "de": "Beispiel: [{\"id\":\"lamp1\",\"name\":\"Lampe\",\"address\":\"AA:BB:CC:DD:EE:FF\",\"connect\":true,\"gatt\":[...]}]"
+          }
+        }
+      }
+    }
+  }
+}
