@@ -8,8 +8,8 @@ Er nutzt den eingebauten Bluetooth-Controller über **BlueZ (D-Bus)** und kann *
 
 ## ✨ Features
 
-- 🔎 **Scan / Discovery** (BLE) über `commands.scan`
-- 🧭 **Admin UI**: Geräte **scannen**, **koppeln** und in die Konfiguration **hinzufügen**
+- 🧭 **Admin-UI Gerätemanager**: Scan, Pair/Trust, Gerät zur Konfiguration hinzufügen
+- 🔎 **Scan / Discovery** (BLE) optional über `commands.scan`
 - 🔌 **Multi-Device**: mehrere Geräte per MAC-Adresse
 - 📟 **RSSI / connected / lastSeen** pro Gerät
 - 📥 **Read** von GATT Characteristics (Polling)
@@ -46,16 +46,6 @@ Er nutzt den eingebauten Bluetooth-Controller über **BlueZ (D-Bus)** und kann *
 ## ⚙️ Konfiguration
 
 In den Instanz-Einstellungen gibt es ein Feld **Devices JSON**. Dort trägst du ein JSON-Array ein.
-
-### Geräte scannen, koppeln und hinzufügen (Admin UI)
-
-In der Admin-Konfiguration findest du im Tab **Geräte**:
-
-1. **Scan** → listet gefundene BLE-Geräte (Name/MAC/RSSI + Pairing-Status)
-2. **Pair & trust** (optional) → versucht „Just Works“ Pairing und setzt `Trusted=true`
-3. **Add** / **Pair & add** → fügt das Gerät direkt in die Konfiguration ein (gatt-Array leer)
-
-> ℹ️ Wenn ein Gerät eine **PIN/Passkey** verlangt, kann das „Just Works“ Pairing scheitern. In dem Fall bitte über `bluetoothctl` pairen.
 
 ### Beispiel `devicesJson`
 
@@ -127,10 +117,22 @@ Pro GATT-Mapping:
 - `floatle`, `floatbe`
 - `doublele`, `doublebe`
 
+
+## 🧭 Admin-UI: Geräte suchen & hinzufügen (kundenfreundlich)
+
+In den Instanz-Einstellungen gibt es den Tab **Devices / Geräte**:
+
+1. **Scan** → zeigt gefundene Geräte (Name, MAC, RSSI, Paired, Trusted)
+2. Optional **Pair & Trust** (für stabile Verbindungen)
+3. **Add** → Gerät wird automatisch ins **Devices JSON** übernommen
+
+> Hinweis: Manche Geräte benötigen PIN/Passkey. In dem Fall kann Pairing ohne Agent fehlschlagen – dann bitte einmal per `bluetoothctl` koppeln und danach im Admin auf **Show known** klicken.
+
+
 ## 🔎 Geräte finden
 
-1. In ioBroker die Instanz starten.
-2. `bluetooth-rpi5.0.commands.scan` einmal auf **true** setzen.
+1. **Empfohlen:** Admin → Instanz → Tab **Geräte** → **Scan**.
+2. Alternativ: `bluetooth-rpi5.0.commands.scan` einmal auf **true** setzen.
 3. Die Ergebnisse stehen in `bluetooth-rpi5.0.info.scanResults` (JSON).
 
 Damit bekommst du MAC-Adresse + Name + RSSI.
@@ -147,35 +149,38 @@ Je nach Gerät brauchst du Service- und Characteristic-UUIDs. Praktische Tools:
 - **BlueZ init failed / keine Berechtigung:**
   - Prüfe, ob `bluetooth` läuft: `systemctl status bluetooth`
   - Prüfe Gruppenmitgliedschaft: `groups iobroker`
-
 - **Gerät wird nicht gefunden:**
   - `commands.scan` ausführen
   - Gerät in Pairing/Advertising Mode versetzen
-
-- **Pairing/Trust im Admin schlägt fehl (NotAuthorized / PolicyKit):**
-  - Je nach Distribution/Policy können BlueZ-D-Bus-Methoden für Nicht-Root blockiert sein.
-  - Häufige Lösung: Polkit-Regel, die `org.bluez*` für die Gruppe `bluetooth` erlaubt:
-    ```bash
-    sudo tee /etc/polkit-1/rules.d/51-iobroker-bluez.rules >/dev/null <<'EOF'
-    polkit.addRule(function(action, subject) {
-      if (action.id.indexOf("org.bluez") === 0 && subject.isInGroup("bluetooth")) {
-        return polkit.Result.YES;
-      }
-    });
-    EOF
-    ```
-  - Danach neu anmelden oder reboot.
-
 - **StartNotify klappt nicht:**
   - nicht jede Characteristic unterstützt Notify (Flags)
   - nutze `poll` als Fallback
 
 ## 🗺️ Roadmap / Erweiterungen
 
-- Pairing mit PIN/Passkey über Admin UI (Agent mit Eingabe)
+- Pairing/Trust Management
 - Optional Classic Bluetooth / RFCOMM
 - UI-Assistent zum Import von GATT-Services
 
 ## Lizenz
 
 MIT (siehe LICENSE)
+
+
+### 🔐 Polkit / NotAuthorized
+
+Wenn Scan/Pair/Trust im Log mit `NotAuthorized` / `AccessDenied` fehlschlägt, fehlt meist eine polkit-Regel für BlueZ.
+Beispiel (erlaubt BlueZ D-Bus Aktionen für Nutzer in Gruppe `bluetooth`):
+
+```bash
+sudo tee /etc/polkit-1/rules.d/51-iobroker-bluez.rules >/dev/null <<'EOF'
+polkit.addRule(function(action, subject) {
+  if (action.id.indexOf('org.bluez') === 0 && subject.isInGroup('bluetooth')) {
+    return polkit.Result.YES;
+  }
+});
+EOF
+```
+
+Danach: neu anmelden oder reboot.
+

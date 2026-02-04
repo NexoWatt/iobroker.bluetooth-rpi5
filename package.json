@@ -1,7 +1,7 @@
 {
   "name": "iobroker.bluetooth-rpi5",
-  "version": "0.0.2",
-  "description": "ioBroker Bluetooth (BLE) adapter for Raspberry Pi 5 using BlueZ (D-Bus)",
+  "version": "0.0.3",
+  "description": "ioBroker Bluetooth (BLE) adapter for Raspberry Pi 5 using BlueZ (D-Bus) with admin device manager",
   "author": "YOUR_NAME <you@example.com>",
   "license": "MIT",
   "main": "main.js",

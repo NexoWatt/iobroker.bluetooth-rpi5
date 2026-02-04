@@ -1,137 +1,220 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>bluetooth-rpi5</title>
+  <title class="translate">Bluetooth (BLE) - Raspberry Pi 5</title>
 
-  <link rel="stylesheet" type="text/css" href="../../css/materialize.css" />
+  <link rel="stylesheet" type="text/css" href="../../lib/css/materialize.css" />
   <link rel="stylesheet" type="text/css" href="../../css/adapter.css" />
+  <link rel="stylesheet" type="text/css" href="style.css" />
 
-  <script type="text/javascript" src="../../js/jquery-3.2.1.min.js"></script>
-  <script type="text/javascript" src="../../js/materialize.js"></script>
-  <script type="text/javascript" src="../../js/translate.js"></script>
+  <script type="text/javascript" src="../../lib/js/jquery-3.2.1.min.js"></script>
+  <script type="text/javascript" src="../../lib/js/materialize.js"></script>
+  <script type="text/javascript" src="../../lib/js/iobroker.js"></script>
+  <script type="text/javascript" src="../../lib/js/translate.js"></script>
+  <script type="text/javascript" src="../../lib/js/adapter-settings.js"></script>
+
   <script type="text/javascript" src="words.js"></script>
   <script type="text/javascript" src="index_m.js"></script>
-
-  <style>
-    .bt-table td { vertical-align: middle; }
-    .bt-mono { font-family: monospace; }
-    .bt-small { font-size: 0.9rem; }
-  </style>
 </head>
 
 <body>
-<div class="m adapter-container">
+<div class="m-container">
+  <div class="header-row">
+    <img src="bluetooth-rpi5.png" alt="bluetooth" />
+    <div>
+      <h5 style="margin: 0" class="translate">Bluetooth (BLE) - Raspberry Pi 5</h5>
+      <div class="small-help translate">Scan, pair/trust and manage multiple BLE devices via BlueZ (D-Bus).</div>
+    </div>
+  </div>
 
-  <div class="row">
+  <div class="row" style="margin-top: 0.75rem">
     <div class="col s12">
       <ul class="tabs">
-        <li class="tab col s6"><a href="#tab-general" class="translate" data-lang="tab_general">General</a></li>
-        <li class="tab col s6"><a href="#tab-devices" class="translate" data-lang="tab_devices">Devices</a></li>
+        <li class="tab col s6"><a class="active translate" href="#tab-general">General</a></li>
+        <li class="tab col s6"><a class="translate" href="#tab-devices">Devices</a></li>
       </ul>
     </div>
-  </div>
 
-  <!-- General -->
-  <div id="tab-general" class="col s12">
-    <div class="row">
-      <div class="input-field col s6">
-        <input id="adapter" type="text" class="value" />
-        <label for="adapter" class="translate" data-lang="bluetooth_adapter">Bluetooth adapter (e.g. hci0)</label>
+    <!-- GENERAL TAB -->
+    <div id="tab-general" class="col s12">
+      <div class="card section-card">
+        <div class="card-content">
+          <span class="card-title translate">General settings</span>
+
+          <div class="row">
+            <div class="input-field col s12 m6">
+              <input id="adapter" type="text" class="value" />
+              <label for="adapter" class="translate">Bluetooth adapter (e.g. hci0)</label>
+            </div>
+
+            <div class="input-field col s12 m6">
+              <input id="scanDurationSec" type="number" class="value" min="1" max="300" />
+              <label for="scanDurationSec" class="translate">Scan duration (seconds)</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col s12 m6">
+              <label>
+                <input id="scanOnStart" type="checkbox" class="value" />
+                <span class="translate">Scan on start</span>
+              </label>
+            </div>
+
+            <div class="input-field col s12 m6">
+              <input id="reconnectIntervalSec" type="number" class="value" min="5" max="3600" />
+              <label for="reconnectIntervalSec" class="translate">Reconnect interval (seconds)</label>
+            </div>
+          </div>
+
+          <div class="row" style="margin-bottom: 0">
+            <div class="col s12">
+              <div class="small-help translate">
+                Tip: If scan/pair actions fail with "NotAuthorized", you likely need a polkit rule to allow BlueZ D-Bus access for the ioBroker user/group.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICES TAB -->
+    <div id="tab-devices" class="col s12">
+      <div class="card section-card">
+        <div class="card-content">
+          <span class="card-title translate">Device discovery</span>
+
+          <div class="row">
+            <div class="input-field col s12 m4">
+              <select id="scanTransport">
+                <option value="le" selected>LE</option>
+                <option value="auto">Auto</option>
+                <option value="bredr">BR/EDR</option>
+              </select>
+              <label class="translate">Transport</label>
+            </div>
+
+            <div class="col s12 m8" style="margin-top: 0.5rem">
+              <a id="btnScan" class="btn waves-effect waves-light">
+                <i class="material-icons left">search</i>
+                <span class="translate">Scan</span>
+              </a>
+              <a id="btnListKnown" class="btn-flat waves-effect">
+                <i class="material-icons left">list</i>
+                <span class="translate">Show known</span>
+              </a>
+              <span id="scanStatus" class="small-help" style="margin-left: 0.75rem"></span>
+            </div>
+          </div>
+
+          <div id="scanProgress" class="progress" style="display:none;">
+            <div class="indeterminate"></div>
+          </div>
+
+          <table class="highlight responsive-table">
+            <thead>
+              <tr>
+                <th class="translate">Name</th>
+                <th class="translate">Address</th>
+                <th class="translate">RSSI</th>
+                <th class="translate">Paired</th>
+                <th class="translate">Trusted</th>
+                <th class="translate">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="scanResultsBody"></tbody>
+          </table>
+
+          <div class="row" style="margin-top: 0.75rem; margin-bottom: 0">
+            <div class="col s12" id="scanEmptyHint" style="display:none;">
+              <div class="small-help translate">No devices found. Put your device in pairing/advertising mode and try again.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="input-field col s6">
-        <input id="scanDurationSec" type="number" min="1" max="300" class="value" />
-        <label for="scanDurationSec" class="translate" data-lang="scan_duration">Scan duration (seconds)</label>
+      <div class="card section-card">
+        <div class="card-content">
+          <span class="card-title translate">Configured devices</span>
+
+          <table class="highlight responsive-table">
+            <thead>
+              <tr>
+                <th class="translate">ID</th>
+                <th class="translate">Name</th>
+                <th class="translate">Address</th>
+                <th class="translate">Auto connect</th>
+                <th class="translate">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="configuredDevicesBody"></tbody>
+          </table>
+
+          <div class="row" style="margin-top: 0.75rem; margin-bottom: 0">
+            <div class="col s12">
+              <ul class="collapsible">
+                <li>
+                  <div class="collapsible-header"><i class="material-icons">code</i><span class="translate">Advanced: Devices JSON</span></div>
+                  <div class="collapsible-body">
+                    <div class="small-help translate" style="margin-bottom: 0.5rem;">
+                      The UI manages this JSON. You can still edit it manually for GATT mappings.
+                    </div>
+                    <div class="input-field">
+                      <textarea id="devicesJson" class="materialize-textarea value mono" style="min-height: 220px;"></textarea>
+                      <label for="devicesJson" class="translate">Devices JSON</label>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD DEVICE MODAL -->
+<div id="modalAddDevice" class="modal">
+  <div class="modal-content">
+    <h5 class="translate">Add device</h5>
+
+    <div class="row">
+      <div class="input-field col s12 m6">
+        <input id="addDeviceId" type="text" />
+        <label for="addDeviceId" class="translate">ID</label>
+      </div>
+      <div class="input-field col s12 m6">
+        <input id="addDeviceName" type="text" />
+        <label for="addDeviceName" class="translate">Name</label>
       </div>
     </div>
 
     <div class="row">
-      <div class="col s6">
+      <div class="input-field col s12 m8">
+        <input id="addDeviceAddress" type="text" disabled />
+        <label for="addDeviceAddress" class="translate">Address</label>
+      </div>
+      <div class="col s12 m4" style="margin-top: 1.25rem">
         <label>
-          <input id="scanOnStart" type="checkbox" class="value" />
-          <span class="translate" data-lang="scan_on_start">Scan on start</span>
+          <input id="addDeviceAutoConnect" type="checkbox" checked />
+          <span class="translate">Auto connect</span>
         </label>
       </div>
-
-      <div class="input-field col s6">
-        <input id="reconnectIntervalSec" type="number" min="5" max="3600" class="value" />
-        <label for="reconnectIntervalSec" class="translate" data-lang="reconnect_interval">Reconnect interval (seconds)</label>
-      </div>
     </div>
+
+    <div class="small-help translate">GATT mappings can be added later in Devices JSON.</div>
   </div>
-
-  <!-- Devices -->
-  <div id="tab-devices" class="col s12">
-    <div class="row">
-      <div class="col s12">
-        <h6 class="translate" data-lang="device_discovery">Device discovery</h6>
-        <div class="bt-small grey-text translate" data-lang="scan_hint">Scans via BlueZ on the ioBroker host.</div>
-        <div class="bt-small orange-text translate" data-lang="warn_pairing" style="margin-top:6px;">
-          Pairing works best for 'Just Works' devices. If a PIN/passkey is required, use bluetoothctl.
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col s12">
-        <a id="btnScan" class="waves-effect waves-light btn">
-          <i class="material-icons left">search</i>
-          <span class="translate" data-lang="scan">Scan</span>
-        </a>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col s12">
-        <h6 class="translate" data-lang="scan_results">Scan results</h6>
-        <table class="striped bt-table" id="scanTable">
-          <thead>
-          <tr>
-            <th class="translate" data-lang="name">Name</th>
-            <th class="translate" data-lang="address">Address</th>
-            <th class="translate" data-lang="rssi">RSSI</th>
-            <th class="translate" data-lang="paired">Paired</th>
-            <th class="translate" data-lang="trusted">Trusted</th>
-            <th class="translate" data-lang="actions">Actions</th>
-          </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col s12">
-        <h6 class="translate" data-lang="configured_devices">Configured devices</h6>
-        <table class="striped bt-table" id="cfgTable">
-          <thead>
-          <tr>
-            <th class="translate" data-lang="id">ID</th>
-            <th class="translate" data-lang="name">Name</th>
-            <th class="translate" data-lang="address">Address</th>
-            <th class="translate" data-lang="connect">Auto connect</th>
-            <th class="translate" data-lang="remove">Remove</th>
-          </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col s12">
-        <h6 class="translate" data-lang="advanced_json">Advanced: devices JSON</h6>
-        <div class="bt-small grey-text translate" data-lang="devices_json_help"></div>
-        <div class="input-field">
-          <textarea id="devicesJson" class="materialize-textarea value" style="font-family: monospace; min-height: 240px;"></textarea>
-          <label for="devicesJson" class="translate">Devices JSON</label>
-        </div>
-      </div>
-    </div>
+  <div class="modal-footer">
+    <a href="#!" class="modal-close btn-flat translate">Cancel</a>
+    <a id="btnConfirmAddDevice" href="#!" class="btn waves-effect waves-light">
+      <i class="material-icons left">add</i>
+      <span class="translate">Add</span>
+    </a>
   </div>
-
 </div>
+
 </body>
 </html>
