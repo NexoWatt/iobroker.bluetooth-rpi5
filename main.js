@@ -15,6 +15,7 @@ class BluetoothRpi5 extends utils.Adapter {
 
     this.on('ready', this.onReady.bind(this));
     this.on('stateChange', this.onStateChange.bind(this));
+    this.on('message', this.onMessage.bind(this));
     this.on('unload', this.onUnload.bind(this));
 
     /** @type {BlueZ|null} */
@@ -82,6 +83,99 @@ class BluetoothRpi5 extends utils.Adapter {
       if (ctx.config.connect) {
         this._scheduleConnect(deviceId, 0);
       }
+    }
+  }
+
+  /**
+   * Handle messages from Admin UI (sendTo).
+   * @param {any} obj
+   */
+  async onMessage(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const command = obj.command;
+    const message = obj.message || {};
+
+    const reply = (payload) => {
+      if (obj.callback) {
+        try {
+          this.sendTo(obj.from, obj.command, payload, obj.callback);
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    // Some commands can be called before BlueZ init has completed.
+    if (!this.bluez && command !== 'ping') {
+      reply({ error: 'BlueZ not initialized' });
+      return;
+    }
+
+    try {
+      switch (command) {
+        case 'ping':
+          reply({ ok: true });
+          return;
+
+        case 'scan': {
+          const durationSec = Math.max(1, Number(message.durationSec || this.config.scanDurationSec || 15));
+          const devices = await this._performScan({ durationSec, transport: 'le', returnResults: true });
+          reply({ ok: true, devices });
+          return;
+        }
+
+        case 'deviceInfo': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          const device = await this.bluez.getDeviceInfo(address, { timeoutMs: 15000, scan: false });
+          reply({ ok: true, device });
+          return;
+        }
+
+        case 'pair': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          const trust = message.trust !== false;
+          await this.bluez.pairDevice(address, { trust, timeoutMs: 45000 });
+          const device = await this.bluez.getDeviceInfo(address, { timeoutMs: 15000, scan: false }).catch(() => null);
+          reply({ ok: true, device });
+          return;
+        }
+
+        case 'trust': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          await this.bluez.setTrusted(address, Boolean(message.trusted));
+          reply({ ok: true });
+          return;
+        }
+
+        case 'removeDevice': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          await this.bluez.removeDevice(address);
+          reply({ ok: true });
+          return;
+        }
+
+        default:
+          reply({ error: `Unknown command: ${command}` });
+      }
+    } catch (e) {
+      reply({ error: e && e.message ? e.message : String(e) });
     }
   }
 
@@ -376,10 +470,10 @@ class BluetoothRpi5 extends utils.Adapter {
     await this.setStateAsync(`devices.${deviceId}.info.lastSeen`, new Date().toISOString(), true);
   }
 
-  async _performScan() {
+  async _performScan(opts = {}) {
     if (!this.bluez) return;
 
-    const duration = Math.max(1, Number(this.config.scanDurationSec || 15));
+    const duration = Math.max(1, Number(opts.durationSec || this.config.scanDurationSec || 15));
     this.log.info(`Scanning for BLE devices for ${duration}s ...`);
 
     try {
@@ -398,12 +492,16 @@ class BluetoothRpi5 extends utils.Adapter {
         name: d.name,
         rssi: d.rssi,
         connected: d.connected,
+        paired: d.paired,
+        trusted: d.trusted,
       }));
 
     await this.setStateAsync('info.scanResults', JSON.stringify(compact, null, 2), true);
     await this.setStateAsync('info.lastScan', new Date().toISOString(), true);
 
     this.log.info(`Scan complete: ${compact.length} device(s)`);
+
+    if (opts.returnResults) return compact;
   }
 
   async onStateChange(id, state) {

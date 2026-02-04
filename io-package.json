@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "bluetooth-rpi5",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "news": {
+      "0.0.2": {
+        "en": "Admin UI: scan, pair and add devices. sendTo API for discovery/pairing.",
+        "de": "Admin UI: Geräte scannen, koppeln und hinzufügen. sendTo API für Discovery/Pairing."
+      },
       "0.0.1": {
         "en": "Initial development version.",
         "de": "Initiale Entwicklungsversion."
@@ -40,7 +44,7 @@
     "connectionType": "local",
     "dataSource": "push",
     "adminUI": {
-      "config": "json"
+      "config": "materialize"
     },
     "dependencies": [
       {

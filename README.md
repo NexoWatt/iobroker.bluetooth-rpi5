@@ -9,6 +9,7 @@ Er nutzt den eingebauten Bluetooth-Controller über **BlueZ (D-Bus)** und kann *
 ## ✨ Features
 
 - 🔎 **Scan / Discovery** (BLE) über `commands.scan`
+- 🧭 **Admin UI**: Geräte **scannen**, **koppeln** und in die Konfiguration **hinzufügen**
 - 🔌 **Multi-Device**: mehrere Geräte per MAC-Adresse
 - 📟 **RSSI / connected / lastSeen** pro Gerät
 - 📥 **Read** von GATT Characteristics (Polling)
@@ -45,6 +46,16 @@ Er nutzt den eingebauten Bluetooth-Controller über **BlueZ (D-Bus)** und kann *
 ## ⚙️ Konfiguration
 
 In den Instanz-Einstellungen gibt es ein Feld **Devices JSON**. Dort trägst du ein JSON-Array ein.
+
+### Geräte scannen, koppeln und hinzufügen (Admin UI)
+
+In der Admin-Konfiguration findest du im Tab **Geräte**:
+
+1. **Scan** → listet gefundene BLE-Geräte (Name/MAC/RSSI + Pairing-Status)
+2. **Pair & trust** (optional) → versucht „Just Works“ Pairing und setzt `Trusted=true`
+3. **Add** / **Pair & add** → fügt das Gerät direkt in die Konfiguration ein (gatt-Array leer)
+
+> ℹ️ Wenn ein Gerät eine **PIN/Passkey** verlangt, kann das „Just Works“ Pairing scheitern. In dem Fall bitte über `bluetoothctl` pairen.
 
 ### Beispiel `devicesJson`
 
@@ -136,16 +147,32 @@ Je nach Gerät brauchst du Service- und Characteristic-UUIDs. Praktische Tools:
 - **BlueZ init failed / keine Berechtigung:**
   - Prüfe, ob `bluetooth` läuft: `systemctl status bluetooth`
   - Prüfe Gruppenmitgliedschaft: `groups iobroker`
+
 - **Gerät wird nicht gefunden:**
   - `commands.scan` ausführen
   - Gerät in Pairing/Advertising Mode versetzen
+
+- **Pairing/Trust im Admin schlägt fehl (NotAuthorized / PolicyKit):**
+  - Je nach Distribution/Policy können BlueZ-D-Bus-Methoden für Nicht-Root blockiert sein.
+  - Häufige Lösung: Polkit-Regel, die `org.bluez*` für die Gruppe `bluetooth` erlaubt:
+    ```bash
+    sudo tee /etc/polkit-1/rules.d/51-iobroker-bluez.rules >/dev/null <<'EOF'
+    polkit.addRule(function(action, subject) {
+      if (action.id.indexOf("org.bluez") === 0 && subject.isInGroup("bluetooth")) {
+        return polkit.Result.YES;
+      }
+    });
+    EOF
+    ```
+  - Danach neu anmelden oder reboot.
+
 - **StartNotify klappt nicht:**
   - nicht jede Characteristic unterstützt Notify (Flags)
   - nutze `poll` als Fallback
 
 ## 🗺️ Roadmap / Erweiterungen
 
-- Pairing/Trust Management
+- Pairing mit PIN/Passkey über Admin UI (Agent mit Eingabe)
 - Optional Classic Bluetooth / RFCOMM
 - UI-Assistent zum Import von GATT-Services
 
