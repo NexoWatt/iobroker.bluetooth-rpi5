@@ -3,13 +3,17 @@
     "name": "bluetooth-rpi5",
     "version": "0.0.3",
     "news": {
+      "0.0.3": {
+        "en": "Admin UI: fixed Materialize includes, adapter dropdown, smartphone-like scan & add (no manual MAC entry).",
+        "de": "Admin UI: Materialize-Pfade repariert, Adapter-Auswahlfeld, Smartphone-ähnliches Scannen & Hinzufügen (keine manuelle MAC-Eingabe)."
+      },
+      "0.0.2": {
+        "en": "Admin UI: scan, pair and add devices. sendTo API for discovery/pairing.",
+        "de": "Admin UI: Geräte scannen, koppeln und hinzufügen. sendTo API für Discovery/Pairing."
+      },
       "0.0.1": {
         "en": "Initial development version.",
         "de": "Initiale Entwicklungsversion."
-      },
-      "0.0.3": {
-        "en": "Admin UI device manager (scan/pair/trust/add) and improved BlueZ device properties.",
-        "de": "Admin-UI Gerätemanager (Scan/Pair/Trust/Add) und erweiterte BlueZ Device-Properties."
       }
     },
     "title": "Bluetooth (BLE) - Raspberry Pi 5",
@@ -22,7 +26,7 @@
       "de": "Generischer BLE-Adapter für Raspberry Pi 5 über den eingebauten Bluetooth-Controller (BlueZ D-Bus)."
     },
     "authors": [
-      "NexoWatt <support@nexowatt.example>"
+      "YOUR_NAME <you@example.com>"
     ],
     "keywords": [
       "bluetooth",
@@ -51,15 +55,14 @@
         "js-controller": ">=5.0.0"
       }
     ],
-    "main": "main.js",
-    "materialize": true
+    "main": "main.js"
   },
   "native": {
     "adapter": "hci0",
     "scanOnStart": true,
     "scanDurationSec": 15,
     "reconnectIntervalSec": 30,
-    "devicesJson": "[\n  {\n    \\\"id\\\": \\\"demo\\\",\n    \\\"name\\\": \\\"Demo Device\\\",\n    \\\"address\\\": \\\"AA:BB:CC:DD:EE:FF\\\",\n    \\\"connect\\\": false,\n    \\\"gatt\\\": []\n  }\n]\n"
+    "devicesJson": "[]"
   },
   "objects": [],
   "instanceObjects": []

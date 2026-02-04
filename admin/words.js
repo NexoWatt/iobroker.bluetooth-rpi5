@@ -1,140 +1,58 @@
-/*global systemDictionary:true */
+/*global systemDictionary */
 'use strict';
 
 systemDictionary = {
-  'Bluetooth (BLE) - Raspberry Pi 5': {
-    'en': 'Bluetooth (BLE) - Raspberry Pi 5',
-    'de': 'Bluetooth (BLE) - Raspberry Pi 5'
-  },
-  'Scan, pair/trust and manage multiple BLE devices via BlueZ (D-Bus).': {
-    'en': 'Scan, pair/trust and manage multiple BLE devices via BlueZ (D-Bus).',
-    'de': 'Scannen, koppeln/vertrauen und mehrere BLE-Geräte über BlueZ (D-Bus) verwalten.'
+  "title": {"en": "Bluetooth (BLE) - Raspberry Pi 5", "de": "Bluetooth (BLE) - Raspberry Pi 5"},
+  "subtitle": {
+    "en": "Scan, pair/trust and manage multiple BLE devices via BlueZ (D-Bus).", 
+    "de": "Scannen, koppeln/vertrauen und mehrere BLE-Geräte verwalten (BlueZ D-Bus)."
   },
 
-  'General': {
-    'en': 'General',
-    'de': 'Allgemein'
+  "tab_general": {"en": "General", "de": "Allgemein"},
+  "tab_devices": {"en": "Devices", "de": "Geräte"},
+
+  "general_settings": {"en": "General settings", "de": "Allgemeine Einstellungen"},
+  "bluetooth_adapter_select": {"en": "Bluetooth adapter", "de": "Bluetooth-Adapter"},
+  "adapter_hint": {
+    "en": "Select the installed Bluetooth controller (e.g. hci0). No manual typing required.",
+    "de": "Wählen Sie den installierten Bluetooth-Controller (z. B. hci0). Keine manuelle Eingabe nötig."
   },
-  'Devices': {
-    'en': 'Devices',
-    'de': 'Geräte'
-  },
-  'General settings': {
-    'en': 'General settings',
-    'de': 'Allgemeine Einstellungen'
-  },
-  'Bluetooth adapter (e.g. hci0)': {
-    'en': 'Bluetooth adapter (e.g. hci0)',
-    'de': 'Bluetooth-Adapter (z. B. hci0)'
-  },
-  'Scan duration (seconds)': {
-    'en': 'Scan duration (seconds)',
-    'de': 'Scan-Dauer (Sekunden)'
-  },
-  'Scan on start': {
-    'en': 'Scan on start',
-    'de': 'Beim Start scannen'
-  },
-  'Reconnect interval (seconds)': {
-    'en': 'Reconnect interval (seconds)',
-    'de': 'Wiederverbindungsintervall (Sekunden)'
-  },
-  'Tip: If scan/pair actions fail with "NotAuthorized", you likely need a polkit rule to allow BlueZ D-Bus access for the ioBroker user/group.': {
-    'en': 'Tip: If scan/pair actions fail with "NotAuthorized", you likely need a polkit rule to allow BlueZ D-Bus access for the ioBroker user/group.',
-    'de': 'Tipp: Wenn Scan/Pair-Aktionen mit "NotAuthorized" fehlschlagen, brauchst du vermutlich eine polkit-Regel, damit der ioBroker Benutzer/Gruppe BlueZ per D-Bus nutzen darf.'
+  "refresh": {"en": "Refresh", "de": "Aktualisieren"},
+
+  "scan_on_start": {"en": "Scan on start", "de": "Beim Start scannen"},
+  "scan_duration": {"en": "Scan duration (seconds)", "de": "Scan-Dauer (Sekunden)"},
+  "reconnect_interval": {"en": "Reconnect interval (seconds)", "de": "Wiederverbindungsintervall (Sekunden)"},
+  "polkit_hint": {
+    "en": "If scan/pair actions fail with \"Not authorized\", you likely need a Polkit rule to allow the ioBroker user/group to access BlueZ D-Bus.",
+    "de": "Wenn Scan-/Koppel-Aktionen mit \"Nicht autorisiert\" fehlschlagen, benötigen Sie vermutlich eine Polkit-Regel, damit der ioBroker-Benutzer/die Gruppe auf den BlueZ D-Bus zugreifen darf."
   },
 
-  'Device discovery': {
-    'en': 'Device discovery',
-    'de': 'Gerätesuche'
+  "device_discovery": {"en": "Device discovery", "de": "Geräte suchen"},
+  "transport": {"en": "Transport", "de": "Transport"},
+  "filter": {"en": "Filter (name / MAC)", "de": "Filter (Name / MAC)"},
+  "scan": {"en": "Scan", "de": "Scannen"},
+  "scan_hint": {
+    "en": "Like on a smartphone: click Scan, choose a device from the list, and it will be paired/trusted automatically when possible.",
+    "de": "Wie beim Smartphone: Scannen klicken, Gerät aus der Liste wählen – Kopplung/Vertrauen erfolgt automatisch, sofern möglich."
   },
-  'Transport': {
-    'en': 'Transport',
-    'de': 'Transport'
-  },
-  'Scan': {
-    'en': 'Scan',
-    'de': 'Scan'
-  },
-  'Show known': {
-    'en': 'Show known',
-    'de': 'Bekannte anzeigen'
+  "warn_pairing": {
+    "en": "For devices requiring PIN/Passkey, pairing may need bluetoothctl.",
+    "de": "Bei Geräten mit PIN/Passkey kann die Kopplung bluetoothctl erfordern."
   },
 
-  'Name': {
-    'en': 'Name',
-    'de': 'Name'
-  },
-  'Address': {
-    'en': 'Address',
-    'de': 'Adresse'
-  },
-  'RSSI': {
-    'en': 'RSSI',
-    'de': 'RSSI'
-  },
-  'Paired': {
-    'en': 'Paired',
-    'de': 'Gekoppelt'
-  },
-  'Trusted': {
-    'en': 'Trusted',
-    'de': 'Vertrauenswürdig'
-  },
-  'Actions': {
-    'en': 'Actions',
-    'de': 'Aktionen'
-  },
-  'No devices found. Put your device in pairing/advertising mode and try again.': {
-    'en': 'No devices found. Put your device in pairing/advertising mode and try again.',
-    'de': 'Keine Geräte gefunden. Setze dein Gerät in den Pairing/Advertising-Modus und versuche es erneut.'
+  "configured_devices": {"en": "Configured devices", "de": "Konfigurierte Geräte"},
+  "configured_hint": {
+    "en": "Devices are added from the scan list. No manual MAC entry required.",
+    "de": "Geräte werden aus der Scan-Liste hinzugefügt. Keine manuelle MAC-Eingabe nötig."
   },
 
-  'Configured devices': {
-    'en': 'Configured devices',
-    'de': 'Konfigurierte Geräte'
-  },
-  'ID': {
-    'en': 'ID',
-    'de': 'ID'
-  },
-  'Auto connect': {
-    'en': 'Auto connect',
-    'de': 'Automatische Verbindung'
-  },
-
-  'Advanced: Devices JSON': {
-    'en': 'Advanced: Devices JSON',
-    'de': 'Erweitert: Geräte-JSON'
-  },
-  'The UI manages this JSON. You can still edit it manually for GATT mappings.': {
-    'en': 'The UI manages this JSON. You can still edit it manually for GATT mappings.',
-    'de': 'Die UI verwaltet dieses JSON. Für GATT-Mappings kannst du es weiterhin manuell bearbeiten.'
-  },
-  'Devices JSON': {
-    'en': 'Devices JSON',
-    'de': 'Geräte-JSON'
-  },
-
-  'Add device': {
-    'en': 'Add device',
-    'de': 'Gerät hinzufügen'
-  },
-  'Cancel': {
-    'en': 'Cancel',
-    'de': 'Abbrechen'
-  },
-  'Add': {
-    'en': 'Add',
-    'de': 'Hinzufügen'
-  },
-  'GATT mappings can be added later in Devices JSON.': {
-    'en': 'GATT mappings can be added later in Devices JSON.',
-    'de': 'GATT-Mappings können später im Geräte-JSON ergänzt werden.'
-  },
-
-  'No devices configured': {
-    'en': 'No devices configured',
-    'de': 'Keine Geräte konfiguriert'
-  }
+  "id": {"en": "ID", "de": "ID"},
+  "name": {"en": "Name", "de": "Name"},
+  "address": {"en": "Address", "de": "Adresse"},
+  "rssi": {"en": "RSSI", "de": "RSSI"},
+  "status": {"en": "Status", "de": "Status"},
+  "actions": {"en": "Actions", "de": "Aktionen"},
+  "add": {"en": "Add", "de": "Hinzufügen"},
+  "connect": {"en": "Auto", "de": "Auto"},
+  "remove": {"en": "Remove", "de": "Entfernen"}
 };

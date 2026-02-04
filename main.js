@@ -3,6 +3,7 @@
 const utils = require('@iobroker/adapter-core');
 
 const { BlueZ } = require('./lib/bluez/BlueZ');
+const { listAdapters } = require('./lib/bluez/system');
 const { parseDevicesConfig } = require('./lib/config');
 const { decodeValue, encodeValue, inferIoBrokerType } = require('./lib/format');
 
@@ -83,6 +84,125 @@ class BluetoothRpi5 extends utils.Adapter {
       if (ctx.config.connect) {
         this._scheduleConnect(deviceId, 0);
       }
+    }
+  }
+
+  /**
+   * Handle messages from Admin UI (sendTo).
+   * @param {any} obj
+   */
+  async onMessage(obj) {
+    if (!obj || typeof obj !== 'object') return;
+
+    const command = obj.command;
+    const message = obj.message || {};
+
+    const reply = (payload) => {
+      if (obj.callback) {
+        try {
+          this.sendTo(obj.from, obj.command, payload, obj.callback);
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    // Some commands can be called before BlueZ init has completed.
+    if (!this.bluez && !['ping', 'listAdapters'].includes(command)) {
+      reply({ error: 'BlueZ not initialized' });
+      return;
+    }
+
+    try {
+      switch (command) {
+        case 'ping':
+          reply({ ok: true });
+          return;
+
+        case 'listAdapters': {
+          const adapters = await listAdapters({ log: this.log });
+          reply({ ok: true, adapters });
+          return;
+        }
+
+        case 'scan': {
+          const durationSec = Math.max(1, Number(message.durationSec || this.config.scanDurationSec || 15));
+          const transport = String(message.transport || 'le').toLowerCase();
+          const devices = await this._performScan({ durationSec, transport, returnResults: true });
+          reply({ ok: true, devices });
+          return;
+        }
+
+        case 'listDevices': {
+          const onlyPaired = message.onlyPaired === true;
+          const devices = await this.bluez.listDevices();
+          const compact = devices
+            .filter(d => !onlyPaired || Boolean(d.paired))
+            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+            .map(d => ({
+              address: d.address,
+              name: d.name,
+              alias: d.alias,
+              rssi: d.rssi,
+              connected: d.connected,
+              paired: d.paired,
+              trusted: d.trusted,
+            }));
+          reply({ ok: true, devices: compact });
+          return;
+        }
+
+        case 'deviceInfo': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          const device = await this.bluez.getDeviceInfo(address, { timeoutMs: 15000, scan: false });
+          reply({ ok: true, device });
+          return;
+        }
+
+        case 'pair': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          const trust = message.trust !== false;
+          await this.bluez.pairDevice(address, { trust, timeoutMs: 45000 });
+          const device = await this.bluez.getDeviceInfo(address, { timeoutMs: 15000, scan: false }).catch(() => null);
+          reply({ ok: true, device });
+          return;
+        }
+
+        case 'trust': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          await this.bluez.setTrusted(address, Boolean(message.trusted));
+          reply({ ok: true });
+          return;
+        }
+
+        case 'removeDevice': {
+          const address = String(message.address || '').trim();
+          if (!address) {
+            reply({ error: 'Missing address' });
+            return;
+          }
+          await this.bluez.removeDevice(address);
+          reply({ ok: true });
+          return;
+        }
+
+        default:
+          reply({ error: `Unknown command: ${command}` });
+      }
+    } catch (e) {
+      reply({ error: e && e.message ? e.message : String(e) });
     }
   }
 
@@ -377,14 +497,15 @@ class BluetoothRpi5 extends utils.Adapter {
     await this.setStateAsync(`devices.${deviceId}.info.lastSeen`, new Date().toISOString(), true);
   }
 
-  async _performScan() {
+  async _performScan(opts = {}) {
     if (!this.bluez) return;
 
-    const duration = Math.max(1, Number(this.config.scanDurationSec || 15));
+    const duration = Math.max(1, Number(opts.durationSec || this.config.scanDurationSec || 15));
+    const transport = String(opts.transport || 'le').toLowerCase();
     this.log.info(`Scanning for BLE devices for ${duration}s ...`);
 
     try {
-      await this.bluez.startDiscovery({ durationSec: duration, transport: 'le' });
+      await this.bluez.startDiscovery({ durationSec: duration, transport });
       await new Promise(r => setTimeout(r, duration * 1000));
       await this.bluez.stopDiscovery();
     } catch (e) {
@@ -407,6 +528,8 @@ class BluetoothRpi5 extends utils.Adapter {
     await this.setStateAsync('info.lastScan', new Date().toISOString(), true);
 
     this.log.info(`Scan complete: ${compact.length} device(s)`);
+
+    if (opts.returnResults) return compact;
   }
 
   async onStateChange(id, state) {
@@ -454,132 +577,6 @@ class BluetoothRpi5 extends utils.Adapter {
     }
   }
 
-
-
-  async onMessage(obj) {
-    if (!obj || !obj.command) return;
-
-    const command = obj.command;
-    const msg = obj.message || {};
-
-    const respond = (response) => {
-      if (obj.callback) {
-        try {
-          this.sendTo(obj.from, obj.command, response, obj.callback);
-        } catch {
-          // ignore
-        }
-      }
-    };
-
-    try {
-      if (!this.bluez) {
-        throw new Error('BlueZ not initialized');
-      }
-
-      switch (command) {
-        case 'scan': {
-          const durationSec = Math.max(1, Number(msg.durationSec || this.config.scanDurationSec || 15));
-          const transport = msg.transport || 'le';
-
-          this.log.info(`Admin scan requested (${durationSec}s, transport=${transport})`);
-
-          await this.bluez.startDiscovery({ durationSec, transport });
-          await new Promise(r => setTimeout(r, durationSec * 1000));
-          await this.bluez.stopDiscovery();
-
-          const devices = await this.bluez.listDevices();
-          const result = devices
-            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
-            .map(d => ({
-              address: d.address,
-              name: d.name,
-              alias: d.alias,
-              rssi: d.rssi,
-              connected: d.connected,
-              paired: d.paired,
-              trusted: d.trusted,
-            }));
-
-          respond({ ok: true, result });
-          return;
-        }
-
-        case 'listKnown': {
-          const devices = await this.bluez.listDevices();
-          const result = devices
-            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
-            .map(d => ({
-              address: d.address,
-              name: d.name,
-              alias: d.alias,
-              rssi: d.rssi,
-              connected: d.connected,
-              paired: d.paired,
-              trusted: d.trusted,
-            }));
-          respond({ ok: true, result });
-          return;
-        }
-
-        case 'getDeviceInfo': {
-          const address = String(msg.address || '').trim();
-          if (!address) throw new Error('Missing address');
-
-          const info = await this.bluez.getDeviceInfo(address, { timeoutMs: Number(msg.timeoutMs || 15000), scan: msg.scan !== false });
-          respond({ ok: true, result: info });
-          return;
-        }
-
-        case 'pair': {
-          const address = String(msg.address || '').trim();
-          if (!address) throw new Error('Missing address');
-
-          const info = await this.bluez.pairDevice(address, { timeoutMs: Number(msg.timeoutMs || 60000), scan: msg.scan !== false });
-          respond({ ok: true, result: info });
-          return;
-        }
-
-        case 'trust': {
-          const address = String(msg.address || '').trim();
-          if (!address) throw new Error('Missing address');
-
-          const info = await this.bluez.setTrusted(address, true, { timeoutMs: Number(msg.timeoutMs || 15000), scan: msg.scan !== false });
-          respond({ ok: true, result: info });
-          return;
-        }
-
-        case 'pairTrust': {
-          const address = String(msg.address || '').trim();
-          if (!address) throw new Error('Missing address');
-
-          await this.bluez.pairDevice(address, { timeoutMs: Number(msg.timeoutMs || 60000), scan: msg.scan !== false });
-          const info = await this.bluez.setTrusted(address, true, { timeoutMs: Number(msg.timeoutMs || 15000), scan: false });
-          respond({ ok: true, result: info });
-          return;
-        }
-
-        case 'removeDevice': {
-          const address = String(msg.address || '').trim();
-          if (!address) throw new Error('Missing address');
-
-          const removed = await this.bluez.removeDevice(address, { timeoutMs: Number(msg.timeoutMs || 15000), scan: msg.scan !== false });
-          respond({ ok: true, result: { removed } });
-          return;
-        }
-
-        default:
-          respond({ ok: false, error: `Unknown command: ${command}` });
-      }
-    } catch (e) {
-      this.log.warn(`Admin command '${command}' failed: ${e.message}`);
-      // Helpful hint for common permission issues
-      if (/NotAuthorized|not authorized|AccessDenied|access denied/i.test(String(e.message || ''))) {
-        this.log.warn('Hint: BlueZ D-Bus methods may require a polkit rule. See README (Troubleshooting) for details.');
-      }
-      respond({ ok: false, error: e.message });
-    }
-  }
   async onUnload(callback) {
     try {
       // Clear global timers
